@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Order;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
@@ -11,7 +13,8 @@ class OrderController extends Controller
      */
     public function index()
     {
-        //
+        $orders = Auth::user()->orders()->latest()->paginate(10);
+        return response()->json($orders);
     }
 
     /**
@@ -19,7 +22,16 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'items' => 'required|array',
+            'total_amount' => 'required|numeric',
+            'shipping_address' => 'required|string',
+            'status' => 'required|in:pending,processing,completed,cancelled'
+        ]);
+
+        $order = Auth::user()->orders()->create($validated);
+        
+        return response()->json($order, 201);
     }
 
     /**
@@ -27,7 +39,8 @@ class OrderController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $order = Auth::user()->orders()->findOrFail($id);
+        return response()->json($order);
     }
 
     /**
@@ -35,7 +48,18 @@ class OrderController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $order = Auth::user()->orders()->findOrFail($id);
+
+        $validated = $request->validate([
+            'items' => 'sometimes|array',
+            'total_amount' => 'sometimes|numeric',
+            'shipping_address' => 'sometimes|string',
+            'status' => 'sometimes|in:pending,processing,completed,cancelled'
+        ]);
+
+        $order->update($validated);
+        
+        return response()->json($order);
     }
 
     /**
@@ -43,6 +67,9 @@ class OrderController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $order = Auth::user()->orders()->findOrFail($id);
+        $order->delete();
+        
+        return response()->json(null, 204);
     }
 }
